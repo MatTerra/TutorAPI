@@ -1,0 +1,123 @@
+name: Tutor API
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: List changed files
+        id: files
+        uses: jitterbit/get-changed-files@v1
+
+      - name: Check if python files have changed
+        id: files-changed
+        env:
+          FILES: ${{ steps.files.outputs.all }}
+        run: |
+          if [[ $(python3 -c 'from os import environ;import sys;files=environ.get("FILES", "").split();files=[f for f in files if ".py" in f];print(len(files))') -gt 0 ]];
+          then
+            echo '::set-output name=result::true'
+          else
+            echo '::set-output name=result::false'
+          fi
+
+      - uses: actions/checkout@v2
+        if: ${{ steps.files-changed.outputs.result == 'true' }}
+
+      - name: Install dependencies
+        if: ${{ steps.files-changed.outputs.result == 'true' }}
+        run: |
+          pip3 install --upgrade pip
+          pip3 install pylint pytest
+          if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi
+
+      - name: Lint with pylint
+        if: ${{ steps.files-changed.outputs.result == 'true' }}
+        run: |
+          mkdir -p reports
+          pylint src --exit-zero --rcfile=standard.rc -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/lint_report
+
+      - name: Save pylint report
+        if: ${{ steps.files-changed.outputs.result == 'true' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: pylint-report
+          path: reports/lint_report
+
+      - name: Check files ending with newline
+        if: ${{ steps.files-changed.outputs.result == 'true' }}
+        run: |
+          function file_ends_with_newline() {
+            if [ ! -s "$1" ]; then
+              return 0
+            else
+              [[ $(tail -c2 "$1" | wc -l) -gt 0 ]]
+            fi
+          }
+
+          function check_files() {
+            for folder in $1/*; do
+              if [ -d $folder ]; then
+                check_files $folder
+              elif [ -f $folder ] && [ ${folder: -3} == ".py" ]; then
+                if ! file_ends_with_newline $folder; then
+                  echo $folder
+                  exit 1
+                fi
+              fi
+            done
+          }
+          check_files $(pwd)/backend/collector
+
+  test:
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ 3.7.1 ]
+
+    steps:
+      - name: List changed files
+        id: files
+        uses: jitterbit/get-changed-files@v1
+
+      - name: Check if python files have changed
+        id: files-changed
+        env:
+          FILES: ${{ steps.files.outputs.all }}
+        run: |
+          if [[ $(python3 -c 'from os import environ;import sys;files=environ.get("FILES", "").split();files=[f for f in files if ".py" in f];print(len(files))') -gt 0 ]];
+          then
+            echo '::set-output name=result::true'
+          else
+            echo '::set-output name=result::false'
+          fi
+
+      - uses: actions/checkout@v2
+        if: ${{ steps.files-changed.outputs.result == 'true' }}
+      - name: Set up Python ${{ matrix.python-version }}
+        if: ${{ steps.files-changed.outputs.result == 'true' }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        if: ${{ steps.files-changed.outputs.result == 'true' }}
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install pytest
+          if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi
+
+      - name: (Unit)Test with pytest
+        if: ${{ steps.files-changed.outputs.result == 'true' }}
+        run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+          mkdir -p xunit-reports
+          mkdir -p coverage-reports
+          python3 -m pytest --junitxml=xunit-reports/xunit-result-collector.xml --cov=src --cov-report xml:coverage-reports/coverage.xml  tests/unittests
