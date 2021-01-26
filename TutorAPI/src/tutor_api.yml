@@ -1,0 +1,294 @@
+swagger: "2.0"
+info:
+  description: Tutor API
+  version: "1.0.0"
+  title: Tutor API
+consumes:
+  - "application/json"
+produces:
+  - "application/json"
+
+basePath: "/v1/tutor"
+
+paths:
+  /health:
+    get:
+      operationId: tutor_api.probe
+      tags:
+        - "Tutor"
+      summary: "Status check"
+      description: "Verifies if the API is ready."
+      responses:
+        200:
+          description: "API ready"
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              data:
+                type: object
+                properties:
+                  available:
+                    type: integer
+        500:
+          description: "API not ready"
+
+  /:
+    get:
+      operationId: tutor_api.read
+      tags:
+        - "Tutor"
+      parameters:
+        - name: length
+          in: query
+          type: integer
+          required: false
+          description: "Amount of tutor to select"
+        - name: offset
+          in: query
+          type: integer
+          required: false
+          description: "Amount of tutor to skip"
+        - name: id_
+          in: query
+          type: string
+          required: false
+        - name: creation_datetime
+          in: query
+          type: string
+          required: false
+        - name: last_modified_datetime
+          in: query
+          type: string
+          required: false
+        - name: first_name
+          in: query
+          type: string
+          required: false
+        - name: last_name
+          in: query
+          type: string
+          required: false
+        - name: phone_number
+          in: query
+          type: string
+          required: false
+        - name: email
+          in: query
+          type: string
+          required: false
+      summary: "Lists all Tutor available"
+      description: |
+        "Lists all Tutor in the database. May be filtered by all fields."
+      responses:
+        200:
+          description: "Available Tutor"
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              message:
+                type: string
+              data:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  results:
+                    type: array
+                    properties:
+                      entities:
+                        type: object
+        500:
+          description: "An error ocurred"
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              message:
+                type: string
+              data:
+                type: object
+                properties:
+                  error:
+                    type: string
+    post:
+      operationId: tutor_api.create
+      tags:
+        - "Tutor"
+      parameters:
+        - name: entity
+          in: body
+          schema:
+            type: object
+          required: true
+          description: "Tutor to add"
+      summary: "Create a new Tutor."
+      description: |
+        "Creates a new Tutor in the database"
+      responses:
+        201:
+          description: "Tutor created"
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              message:
+                type: string
+              data:
+                type: object
+                properties:
+                  entity:
+                    type: object
+        500:
+          description: "An error ocurred"
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              message:
+                type: string
+              data:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /{id_}:
+    get:
+      operationId: tutor_api.read_one
+      tags:
+        - "Tutor"
+      parameters:
+        - name: id_
+          in: path
+          type: string
+          required: true
+          description: "Id of tutor to select"
+      summary: "Recover tutor"
+      description: |
+        "Select tutor by Id"
+      responses:
+        201:
+          description: "Tutor"
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              message:
+                type: string
+              data:
+                type: object
+                properties:
+                  entity:
+                    type: object
+        500:
+          description: "An error ocurred"
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              message:
+                type: string
+              data:
+                type: object
+                properties:
+                  error:
+                    type: string
+    put:
+      operationId: tutor_api.update
+      tags:
+        - "Tutor"
+      parameters:
+        - name: id_
+          in: path
+          type: string
+          required: true
+          description: "Id of tutor to select"
+        - name: entity
+          in: body
+          schema:
+            type: object
+          required: true
+          description: "Tutor to add"
+      summary: "Update Tutor"
+      description: |
+        "Update Tutor in database."
+      responses:
+        200:
+          description: "Tutor"
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              message:
+                type: string
+              data:
+                type: object
+                properties:
+                  entity:
+                    type: object
+        500:
+          description: "An error ocurred"
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              message:
+                type: string
+              data:
+                type: object
+                properties:
+                  error:
+                    type: string
+    delete:
+      operationId: tutor_api.delete
+      tags:
+        - "Tutor"
+      parameters:
+        - name: id_
+          in: path
+          type: string
+          required: true
+          description: "Id of tutor to select"
+      summary: "Delete Tutor"
+      description: |
+        "Delete Tutor in database."
+      responses:
+        200:
+          description: "Tutor"
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              message:
+                type: string
+              data:
+                type: object
+                properties:
+                  entity:
+                    type: object
+        500:
+          description: "An error ocurred"
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              message:
+                type: string
+              data:
+                type: object
+                properties:
+                  error:
+                    type: string
